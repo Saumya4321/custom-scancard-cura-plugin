@@ -1,0 +1,8 @@
+{
+    "name": "Print",
+    "author": "Saumya",
+    "version": "1.0",
+    "description": "Integrating GeometryPlugin + LaserToolpathPlugin",
+    "api": 8,
+    "main": "__init__.py"
+}
