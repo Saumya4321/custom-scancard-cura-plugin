@@ -30,9 +30,9 @@ Cura acts only as a framework-level UI and mesh provider; all geometry processin
 - Clean separation between UI, domain logic, and hardware interfaces i.e. Core logic has no dependency on Cura
 and hardware communication is abstracted behind interfaces . The same pipeline can be reused for:
 
-        + Different slicers
+  + Different slicers
 
-        + Different scan cards
+  + Different scan cards
  
 
 
