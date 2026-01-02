@@ -39,6 +39,8 @@ and hardware communication is abstracted behind interfaces . The same pipeline c
 This project is under active development and is used as part of a real manufacturing control pipeline.
 
 ## Author 
-Saumya Babu
+Saumya B
+
 Project Assistant, IISc
+
 linkedin![www.linkedin.com/in/saumya-b-]
