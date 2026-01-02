@@ -1,31 +1,13 @@
-# Cura Scan Card Plugin
+## v0 – Initial Implementation
 
-Hardware-Agnostic Toolpath Processing and UDP Streaming Pipeline
+This version represents the initial working implementation where:
+- Cura plugin logic
+- Geometry processing
+- Packetization
+- UDP communication
 
-## Overview
+were handled within a single module.
 
-This repository contains a production Cura plugin and backend pipeline designed to convert sliced geometry into hardware-ready scan vectors and stream them to a custom laser scan card over UDP.
+While functionally correct, this version had tight coupling between UI, domain logic, and hardware interfaces, making testing and extensibility difficult.
 
-Although Cura is used as the frontend slicer, the core processing pipeline is fully decoupled from Cura and can be reused with other CAD/CAM tools or custom frontends.
-
-Cura acts only as a framework-level UI and mesh provider; all geometry processing, path planning, packetization, and hardware communication are implemented as independent, reusable modules.
-
-## Key Features
-
-- Cura plugin for extracting sliced geometry / G-code
-
-- Backend pipeline for:
-
-    + Geometry normalization
-
-    + Path interpolation and planning
-
-    + Galvo coordinate transformation
-
-    + Hardware-specific packetization
-
-    + Real-time UDP streaming to a custom scan card
-
-- Clean separation between UI, domain logic, and hardware interfaces
-
-- Designed for additive manufacturing / laser scanning systems
+This version is preserved to document the architectural evolution of the system.
