@@ -10,6 +10,8 @@ import re
 class UDPSender:
     def __init__(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # self.parent = parent
+        # self.Logger = self.parent.Logger
 
     def get_ethernet_broadcast(self):
         system = platform.system().lower()

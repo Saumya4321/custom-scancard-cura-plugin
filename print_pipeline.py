@@ -6,11 +6,12 @@ from .interpolation_module import PathPlanner
 from .packetisation import Packetizer
 
 class PrintPipeline:
-    def __init__(self):
+    def __init__(self, parent=None):
         self.gcode_parser = GCodeParser()
         self.transformer = GalvoTransformer()
         self.interpolator = PathPlanner()
         self.packetizer = Packetizer()
+        # self.parent = parent
 
     def process_gcode(self, gcode_text, output_dir):
         raw_coords = self.gcode_parser.extract_layers_as_segments(gcode_text)

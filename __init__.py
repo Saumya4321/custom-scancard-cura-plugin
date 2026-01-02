@@ -1,7 +1,7 @@
-from . import Print
+from . import PrintController
 
 def getMetaData():
     return {}
 
 def register(app):
-    return {"extension": Print.Print()}
+    return {"extension": PrintController.PrintController()}

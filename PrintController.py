@@ -1,30 +1,42 @@
 from UM.Extension import Extension
 from UM.Logger import Logger
-from PyQt6.QtWidgets import QFileDialog, QMessageBox
 from UM.Application import Application
 from .print_pipeline import PrintPipeline
+from .viewHelper import viewHelper
 import os
 
-class Print(Extension):
+class PrintController(Extension):
     def __init__(self):
         super().__init__()
         self.addMenuItem("Send to scancard", self.print_process)
         self.Logger = Logger
         self.print_pipeline = PrintPipeline()
+        self.printView = viewHelper()
         self.app = Application.getInstance()
         self.controller = self.app.getController()
         self.scene = self.controller.getScene()
+        self.active_view = self.controller.getActiveView()
         self.Logger.log("d", "[PrintPlugin] Initialized successfully")
+
+
+    def reset_layers(self):
+            self.active_view = self.controller.getActiveView()
+            self.active_view.setLayer(0)      
+            self.active_view.setMinimumPath(0)
+            self.active_view.setPath(0)      
+
+        
        
     def update_layer_preview(self, layer_number):
         """Update Cura's preview to show the layer that was just printed"""
         try:
-            # Get the active view
-            active_view = self.controller.getActiveView()
             
-            if active_view and hasattr(active_view, 'setLayer'):
+            if self.active_view and hasattr(self.active_view, 'setLayer'):
+                max_paths = self.active_view.getMaxPaths()
+                self.active_view.setPath(max_paths)
+
                 # Set the layer in the preview
-                active_view.setLayer(layer_number)
+                self.active_view.setLayer(layer_number)
                 
                 # Force UI to update immediately
                 self.app.processEvents()
@@ -41,16 +53,14 @@ class Print(Extension):
         gcode_dict = getattr(self.scene, "gcode_dict", None)
 
         if not gcode_dict:
-            QMessageBox.warning(None, "Print Plugin",
-                                "Please slice the model first.")
+            self.printView.geometry_processing_error("No G-code found. Please slice the model first.")
             return
         
         # Usually extruder 0
         gcode_text = gcode_dict.get(0, "")
 
         if not gcode_text:
-            QMessageBox.warning(None, "Print Plugin",
-                                "No G-code found after slicing.")
+            self.printView.geometry_processing_error("No G-code found after slicing.")
             return
         
         if isinstance(gcode_text, list):
@@ -67,25 +77,27 @@ class Print(Extension):
                
     def print_process(self):
         try:
-            self.update_layer_preview(0)
 
-            # take user input for saving directory
-            save_path, _ = QFileDialog.getSaveFileName(
-                None, "Save Geometry", "", "Text Files (*.txt)"
-            )
+            try:
+                self.reset_layers()
+            except Exception as e:
+                self.printView.geometry_processing_error(f"{e} \n Slice the model and try again.")
+                return
+
+            save_path, _ = self.printView.ask_output_path()
             if not save_path:
                 return
             
             output_dir=os.path.dirname(save_path)
 
             gcode = self.extract_gcode()
-      
+
+        
             raw_coords = self.print_pipeline.process_gcode(gcode, output_dir)
             Logger.log("d", f"{gcode[:100]}")  # Log first 100 characters for debugging
 
             if not raw_coords:
-                QMessageBox.warning(None, "Print Plugin",
-                                    "No valid coordinates found in G-code.")
+                self.printView.geometry_processing_error("No valid coordinates found in G-code.")
                 return
             
             
@@ -100,26 +112,22 @@ class Print(Extension):
                     self.print_pipeline.udp_send(payload)
 
                     Logger.log("d", f"[PrintPlugin] Sent {len(payload)} UDP payloads of layer {i} to scan card")
-            
+                          
                     self.update_layer_preview(i-1)
-                
-                    reply = QMessageBox.question(
-                    None,
-                    "Print Plugin",
-                    f"Sent {len(payload)} UDP payloads of layer {i} to scan card. \nContinue to next layer?"
-                )
-        
+                    
 
+                
+                    reply = self.printView.confirm_next_layer(i, len(payload))
+        
                     if reply == 65536:
                         Logger.log("d", f"[PrintPlugin] User cancelled the print job.")
-                        QMessageBox.information(None, "Print Plugin", "Print job cancelled by user.")
+                        self.printView.print_cancelled_message()
                         return  # User cancelled
         
 
-            QMessageBox.information(None, "Print Plugin",
-                                    "Print job finished!")
+            self.printView.print_finished_message()
 
         except Exception as e:
             Logger.logException("e", "[PrintPlugin] Error while printing file")
-            QMessageBox.critical(None, "Print Plugin", str(e))
+            self.printView.show_warning(e)
 

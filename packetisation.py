@@ -36,12 +36,6 @@ class Packetizer:
         return scaled
 
 
-    
-
-
-
-
-
     def get_verilog_file(self, max_len, left_scaled_wrapped, right_scaled_wrapped):
         # Format output
         lines = []
