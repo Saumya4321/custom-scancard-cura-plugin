@@ -13,6 +13,7 @@ Cura acts only as a framework-level UI and mesh provider; all geometry processin
 ## Key Features
 
 - Cura plugin for extracting sliced geometry / G-code
+  - Designed for additive manufacturing / laser scanning systems
 
 - Backend pipeline for:
 
@@ -26,6 +27,12 @@ Cura acts only as a framework-level UI and mesh provider; all geometry processin
 
     + Real-time UDP streaming to a custom scan card
 
-- Clean separation between UI, domain logic, and hardware interfaces
+- Clean separation between UI, domain logic, and hardware interfaces i.e. Core logic has no dependency on Cura
+and hardware communication is abstracted behind interfaces . The same pipeline can be reused for:
 
-- Designed for additive manufacturing / laser scanning systems
+        + Different slicers
+
+        + Different scan cards
+ 
+
+
