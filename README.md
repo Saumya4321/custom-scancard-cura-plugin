@@ -34,5 +34,11 @@ and hardware communication is abstracted behind interfaces . The same pipeline c
 
   + Different scan cards
  
+## Status
 
+This project is under active development and is used as part of a real manufacturing control pipeline.
 
+## Author 
+Saumya Babu
+Project Assistant, IISc
+linkedin![www.linkedin.com/in/saumya-b-]
