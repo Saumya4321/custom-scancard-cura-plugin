@@ -40,6 +40,5 @@ This project is under active development and is used as part of a real manufactu
 
 ## Author 
 [Saumya B](www.linkedin.com/in/saumya-b-)
-
 Project Assistant, IISc
 
