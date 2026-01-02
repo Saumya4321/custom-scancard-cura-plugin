@@ -1,4 +1,4 @@
-from . import PrintController
+from .modules import PrintController
 
 def getMetaData():
     return {}
