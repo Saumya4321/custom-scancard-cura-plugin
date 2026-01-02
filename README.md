@@ -1,13 +1,15 @@
-## v0 – Initial Implementation
+## v0 – Initial Modular Implementation
 
-This version represents the initial working implementation where:
-- Cura plugin logic
-- Geometry processing
-- Packetization
-- UDP communication
+This version contains an early working implementation with multiple functional modules
+(e.g., geometry parsing, packetization, UDP communication).
 
-were handled within a single module.
+However, the Cura plugin directly coordinated these modules, and there was no dedicated
+application-layer pipeline to orchestrate the end-to-end print flow.
 
-While functionally correct, this version had tight coupling between UI, domain logic, and hardware interfaces, making testing and extensibility difficult.
+Limitations of this version:
+- Cura-specific logic, UI handling, and domain logic were interleaved
+- No centralized print pipeline abstraction
+- Tight coupling between the Cura plugin and lower-level processing modules
 
-This version is preserved to document the architectural evolution of the system.
+This version is preserved to document the architectural evolution toward a cleaner,
+layered design introduced in later revisions.
