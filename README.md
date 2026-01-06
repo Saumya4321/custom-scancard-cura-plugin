@@ -1,16 +1,24 @@
-## v1 – Application Pipeline Refactor
+## v2 - Multithreaded Print Execution
 
-This version introduces a clean architectural separation:
-- Controller layer for Cura-specific logic
-- View helpers for UI interactions
-- Independent core processing pipeline
-- Domain logic is coordinated through a dedicated PrintPipeline abstraction
-- Explicit hardware communication layer
+This branch refactors the print pipeline to run asynchronously using Qt multithreading, ensuring the Cura UI remains responsive during long print jobs.
 
-The refactor improves:
-- Separation of concerns
-- Maintainability
-- Testability
-- Reusability across slicers and hardware platforms
+### Summary of Changes
 
+- Moved all heavy print operations (G-code processing, layer parsing, payload generation, UDP streaming) into a dedicated ```PrintWorker``` running in a ```QThread```.
+
+- Implemented signal–slot based communication for progress updates, completion, errors, and cancellation.
+
+- Added graceful cancellation support with cooperative stop checks at every critical stage, including mid-UDP transmission.
+
+- Updated the UDP sender to support real-time interruption via a ```stop_check``` callback.
+
+- Introduced robust thread and signal cleanup to prevent UI freezes, crashes, and dangling threads.
+
+### Outcome
+
+- Non-blocking UI during printing
+
+- Safe and responsive print cancellation
+
+- Clean separation between UI control and print execution logic
 
