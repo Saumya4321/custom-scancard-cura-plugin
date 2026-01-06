@@ -30,7 +30,8 @@ class PrintPipeline:
         return self.packetizer.convert_to_payload(x1, y1, x2, y2)
 
 
-    def udp_send(self, payload_list):
+    def udp_send(self, payload_list, stop_check=None):
         udp_socket = UDPSender()
-        udp_socket.send_loop(payload_list)
+        result = udp_socket.send_loop(payload_list, stop_check=stop_check)
         udp_socket.close()
+        return result

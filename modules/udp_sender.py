@@ -1,7 +1,7 @@
 """
 Sends the packets to everyone on ethernet broadcast IP
 """
-import socket # use this instead of netifaces - netifaces doesn't work inside Cura
+import socket
 import time 
 import platform
 import subprocess
@@ -10,8 +10,6 @@ import re
 class UDPSender:
     def __init__(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        # self.parent = parent
-        # self.Logger = self.parent.Logger
 
     def get_ethernet_broadcast(self):
         system = platform.system().lower()
@@ -34,7 +32,7 @@ class UDPSender:
                 return None
             ip = match.group(1)
             prefix = int(match.group(2))
-            mask = socket.inet_ntoa((0xffffffff << (32 - prefix)) .to_bytes(4, 'big'))
+            mask = socket.inet_ntoa((0xffffffff << (32 - prefix)).to_bytes(4, 'big'))
 
         # Compute broadcast address manually
         ip_bytes = [int(o) for o in ip.split('.')]
@@ -42,20 +40,47 @@ class UDPSender:
         broadcast = [ip_bytes[i] | (~mask_bytes[i] & 255) for i in range(4)]
         return '.'.join(map(str, broadcast))
 
-
-    def send_loop(self, payloads):
+    def send_loop(self, payloads, stop_check=None):
+        """
+        Send payloads via UDP with optional stop checking.
+        
+        Args:
+            payloads: List of packets to send
+            stop_check: Optional callable that returns True if sending should stop
+        
+        Returns:
+            True if all packets sent successfully, False if stopped early
+        """
         broadcast_ip = self.get_ethernet_broadcast()
         UDP_PORT = 5005
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        for i, packet in enumerate(payloads):
+        
+        try:
+            for i, packet in enumerate(payloads):
+                # Check if we should stop before sending each packet
+                if stop_check and stop_check():
+                    print(f"[UDP] Stopped at packet {i}/{len(payloads)}")
+                    return False
+                
                 try:
                     sock.sendto(packet, (broadcast_ip, UDP_PORT))
                     print(f"[{i}] Sent: {packet.hex()}")
-                    # self.Logger.log("d", f"[LaserToolpathPlugin] Sent packet [{i}]: {packet.hex()} to {broadcast_ip}:{UDP_PORT}")
+                    
+                    # Check again before sleeping (for faster response)
+                    if stop_check and stop_check():
+                        print(f"[UDP] Stopped after packet {i}/{len(payloads)}")
+                        return False
+                    
                     time.sleep(0.02)
+                    
                 except Exception as e:
                     print(f"socket issue {e}")
+            
+            return True  # All packets sent successfully
+            
+        finally:
+            sock.close()
 
     def close(self):
         self.sock.close()
