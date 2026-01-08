@@ -22,3 +22,10 @@ This branch refactors the print pipeline to run asynchronously using Qt multithr
 
 - Clean separation between UI control and print execution logic
 
+### High-Level Architecture Diagram
+<img width="734" height="675" alt="image" text-align="center" src="https://github.com/user-attachments/assets/84b89942-66b8-4002-b528-409654ebade6" />
+
+### Thread - safe cancellation flow
+<img width="610" height="443" alt="image" text-align="center" src="https://github.com/user-attachments/assets/0c022347-bf34-472a-bfd3-96dc7a9b398c" />
+
+<em>NOTE: Cleanup happens only after the thread has fully exited, preventing race conditions and crashes</em>
