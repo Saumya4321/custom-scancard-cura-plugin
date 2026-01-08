@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QFileDialog, QMessageBox
+from PyQt6.QtWidgets import QFileDialog, QMessageBox, QApplication
 from PyQt6.QtCore import QObject, pyqtSignal, Qt
 
 class printView(QObject):
@@ -7,6 +7,7 @@ class printView(QObject):
     def __init__(self):
         super().__init__()
         self.print_dialog = None
+        self.cursor_overridden = False
 
     def show_printing_dialog(self):
         self.print_dialog = QMessageBox()
@@ -55,3 +56,17 @@ class printView(QObject):
     def geometry_processing_error(self, message):
         QMessageBox.warning(None, "Print Plugin",
                             message)
+        
+    def set_busy_cursor(self):
+        if not self.cursor_overridden:
+            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+            self.cursor_overridden = True
+       
+
+    def restore_cursor(self):
+        if self.cursor_overridden:
+            QApplication.restoreOverrideCursor()
+            self.cursor_overridden = False
+  
+        else:
+            pass  # Cursor was not overridden; no action needed
