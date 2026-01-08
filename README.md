@@ -22,27 +22,3 @@ This branch refactors the print pipeline to run asynchronously using Qt multithr
 
 - Clean separation between UI control and print execution logic
 
-flowchart TB
-    subgraph Framework_UI["Framework / UI Layer"]
-        PC[PrintController<br/>(Cura Plugin)]
-        VH[PrintView / ViewHelper<br/>(Dialogs, UI)]
-    end
-
-    subgraph Application["Application Layer"]
-        PJS[PrintJobService<br/>(Job & Thread Orchestration)]
-    end
-
-    subgraph Execution["Execution Layer"]
-        PW[PrintWorker<br/>(QThread)]
-    end
-
-    subgraph Domain["Domain / Core Logic"]
-        PP[PrintPipeline<br/>(G-code → Layers)]
-        UDP[UDPSender<br/>(UDP Streaming)]
-    end
-
-    PC --> VH
-    PC --> PJS
-    PJS --> PW
-    PW --> PP
-    PP --> UDP
