@@ -22,3 +22,6 @@ This branch refactors the print pipeline to run asynchronously using Qt multithr
 
 - Clean separation between UI control and print execution logic
 
+### High-Level Architecture Diagram
+
+<img width="464" height="911" alt="image" src="https://github.com/user-attachments/assets/586f47c5-46e0-43b5-baaf-892c6050b9de" />
