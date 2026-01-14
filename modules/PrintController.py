@@ -1,7 +1,7 @@
 from UM.Extension import Extension
 from UM.Logger import Logger
 from UM.Application import Application
-from PyQt6.QtCore import QTimer
+from PyQt6.QtCore import QTimer, Qt
 from PyQt6.QtWidgets import QApplication
 from .print_pipeline import PrintPipeline
 from .printView import printView
@@ -23,13 +23,50 @@ class PrintController(Extension):
         self.printView.cancel_requested.connect(self.cancel_print)
         self.job = PrintJobService(self.print_pipeline)
         
-        self.job.progress_layer.connect(self.update_layer_preview)
-        self.job.finished.connect(self.on_print_finished)
-        self.job.error.connect(self.on_print_error)
-        self.job.cancelled.connect(self.on_cancelled)
+        # Use Qt.QueuedConnection to ensure proper thread-safe UI updates
+        self.job.progress_layer.connect(self._schedule_layer_update, Qt.ConnectionType.QueuedConnection)
+        self.job.finished.connect(self.on_print_finished, Qt.ConnectionType.QueuedConnection)
+        self.job.error.connect(self.on_print_error, Qt.ConnectionType.QueuedConnection)
+        self.job.cancelled.connect(self.on_cancelled, Qt.ConnectionType.QueuedConnection)
+        self.job.progress_updated.connect(self.on_progress_updated, Qt.ConnectionType.QueuedConnection)
+        
+        # Throttle layer updates to prevent rapid UI changes
+        self._pending_layer_update = None
+        self._layer_update_timer = QTimer()
+        self._layer_update_timer.setSingleShot(True)
+        self._layer_update_timer.timeout.connect(self._do_layer_update)
+        self._layer_update_interval = 1  # Update every layer for live preview
+        self._last_layer_update_time = 0  # Track timing
         
         self.Logger.log("d", "[PrintPlugin] Initialized successfully")
 
+    def _schedule_layer_update(self, layer_number):
+        """Schedule a layer update with throttling to prevent UI glitches"""
+        import time
+        current_time = time.time()
+        
+        # Only update if at least 500ms have passed since last update
+        # This prevents rapid-fire updates that make the glitch more noticeable
+        time_since_last = current_time - self._last_layer_update_time
+        if time_since_last < 0.5:  # 500ms minimum between updates
+            Logger.log("d", f"[PrintPlugin] Skipping layer update {layer_number} (too soon)")
+            return
+        
+        Logger.log("d", f"[PrintPlugin] Scheduling layer update to {layer_number}")
+        self._pending_layer_update = layer_number
+        
+        # Only update if timer isn't already running (throttle updates)
+        if not self._layer_update_timer.isActive():
+            self._layer_update_timer.start(200)  # 200ms delay to batch updates
+
+    def _do_layer_update(self):
+        """Actually perform the layer update"""
+        import time
+        if self._pending_layer_update is not None:
+            layer_num = self._pending_layer_update
+            self._pending_layer_update = None
+            self._last_layer_update_time = time.time()  # Track when update happened
+            self.update_layer_preview(layer_num)
 
     def reset_layers(self):
         self.active_view = self.controller.getActiveView()
@@ -48,32 +85,29 @@ class PrintController(Extension):
         """Centralized UI cleanup - called after worker has stopped"""
         Logger.log("d", "[PrintPlugin] Starting UI cleanup")
         
-        # First restore cursor BEFORE closing dialog
+        # Stop any pending layer updates
+        self._layer_update_timer.stop()
+        self._pending_layer_update = None
+        
         self.printView.restore_cursor()
-        
-        # Process events to ensure cursor is updated
-        QApplication.processEvents()
-        
-        # Small delay to ensure cursor change is processed
-        QTimer.singleShot(50, self.printView.close_printing_dialog)
-
-        QApplication.processEvents()
-
-        # self.reset_layers()
+        self.printView.close_printing_dialog()
       
     def update_layer_preview(self, layer_number):
         """Update Cura's preview to show the layer that was just printed"""
+        Logger.log("d", f"[PrintPlugin] Updating preview to layer {layer_number}")
         try:
-            if self.active_view and hasattr(self.active_view, 'setLayer'):
-                max_paths = self.active_view.getMaxPaths()
-                self.active_view.setPath(max_paths)
-                self.active_view.setLayer(layer_number)
-                self.app.processEvents()
-                Logger.log("d", f"[PrintPlugin] Preview updated to show layer {layer_number}")
+            # Get fresh reference to active view
+            current_view = self.controller.getActiveView()
+            
+            if current_view and hasattr(current_view, 'setLayer'):
+                # Only update the layer, don't touch setPath
+                # setPath might be causing unnecessary redraws
+                current_view.setLayer(layer_number)
+                Logger.log("d", f"[PrintPlugin] Preview updated to layer {layer_number}")
             else:
                 Logger.log("w", "[PrintPlugin] Preview not available - user may not be in Preview mode")
         except Exception as e:
-            Logger.log("w", f"[PrintPlugin] Could not update preview: {e}")
+            Logger.log("e", f"[PrintPlugin] Error updating preview: {e}")
 
     def extract_gcode(self):
         gcode_dict = getattr(self.scene, "gcode_dict", None)
@@ -126,6 +160,10 @@ class PrintController(Extension):
         # Give a small delay before cleanup to ensure all signals are processed
         QTimer.singleShot(100, self.job.cancel)
 
+    def on_progress_updated(self, current_layer, total_layers):
+        """Update progress bar in the dialog"""
+        self.printView.update_progress(current_layer, total_layers)
+        
     def on_cancelled(self):
         self.is_printing = False
         """Called when worker emits cancelled signal"""
@@ -191,4 +229,3 @@ class PrintController(Extension):
             self._cleanup_ui()
             # Cleanup thread after UI cleanup
             QTimer.singleShot(200, self.job.cancel)
-

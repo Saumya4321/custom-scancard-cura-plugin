@@ -42,7 +42,7 @@ class GalvoTransformer:
         self.coords = coords
     
         transformed_list = self.transform_points(self.coords, self.canvas_width, self.canvas_height)
-        print(f"After transform: {len(transformed_list)} points")
+       
     
         plugin_dir = os.path.dirname(__file__)
         output_path = os.path.join(plugin_dir, "output", "transformed_coords.txt")

@@ -59,9 +59,9 @@ class Packetizer:
     #   Save to file
         current_dir = os.path.dirname(__file__)
         output_file_path = os.path.join(current_dir, "output", "verilog_rom_format.txt")
-        print(f"[DEBUG] Saving to file: {output_file_path}")
+    
         with open(output_file_path, "w") as f:
-            print(f"[DEBUG] Writing {len(lines)} lines to file.")
+           
             f.write("\n".join(lines))
         
         return (x1_list, y1_list, x2_list, y2_list)

@@ -4,6 +4,7 @@ import os
 
 class PrintWorker(QObject):
     progress_layer = pyqtSignal(int)
+    progress_updated = pyqtSignal(int, int)  # current_layer, total_layers
     finished = pyqtSignal()
     error = pyqtSignal(str)
     cancelled = pyqtSignal()
@@ -49,7 +50,8 @@ class PrintWorker(QObject):
                     layer_files.append(filename)
             
             layer_files.sort()
-            Logger.log("d", f"[PrintWorker] Found {len(layer_files)} layer files")
+            total_layers = len(layer_files)
+            Logger.log("d", f"[PrintWorker] Found {total_layers} layer files")
 
             if not layer_files:
                 Logger.log("e", "[PrintWorker] No layer files found")
@@ -91,8 +93,9 @@ class PrintWorker(QObject):
                     
                     Logger.log("d", f"[PrintWorker] Layer {i} sent via UDP")
                     
-                    # Emit progress (layer index is i-1 for 0-based indexing)
-                    self.progress_layer.emit(i - 1)
+                    # Emit progress signals
+                    self.progress_layer.emit(i - 1)  # 0-based index for layer preview
+                    self.progress_updated.emit(i, total_layers)  # 1-based for progress bar
                     
                 except Exception as layer_error:
                     Logger.log("e", f"[PrintWorker] Error processing layer {i}: {layer_error}")

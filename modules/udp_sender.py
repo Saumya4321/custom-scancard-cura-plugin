@@ -60,22 +60,20 @@ class UDPSender:
             for i, packet in enumerate(payloads):
                 # Check if we should stop before sending each packet
                 if stop_check and stop_check():
-                    print(f"[UDP] Stopped at packet {i}/{len(payloads)}")
+                  
                     return False
                 
                 try:
                     sock.sendto(packet, (broadcast_ip, UDP_PORT))
-                    print(f"[{i}] Sent: {packet.hex()}")
                     
                     # Check again before sleeping (for faster response)
                     if stop_check and stop_check():
-                        print(f"[UDP] Stopped after packet {i}/{len(payloads)}")
                         return False
                     
                     time.sleep(0.02)
                     
                 except Exception as e:
-                    print(f"socket issue {e}")
+                    pass
             
             return True  # All packets sent successfully
             

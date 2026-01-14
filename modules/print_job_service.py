@@ -5,6 +5,7 @@ from .print_worker import PrintWorker
 
 class PrintJobService(QObject):
     progress_layer = pyqtSignal(int)
+    progress_updated = pyqtSignal(int, int)  # current_layer, total_layers
     finished = pyqtSignal()
     cancelled = pyqtSignal()
     error = pyqtSignal(str)
@@ -28,6 +29,7 @@ class PrintJobService(QObject):
 
         # Forward worker signals
         self.worker.progress_layer.connect(self.progress_layer)
+        self.worker.progress_updated.connect(self.progress_updated)
         self.worker.finished.connect(self.finished)
         self.worker.cancelled.connect(self.cancelled)
         self.worker.error.connect(self.error)
@@ -60,6 +62,10 @@ class PrintJobService(QObject):
             # Disconnect all signals to prevent issues
             try:
                 self.worker.progress_layer.disconnect()
+            except:
+                pass
+            try:
+                self.worker.progress_updated.disconnect()
             except:
                 pass
             try:
