@@ -2,16 +2,18 @@ from UM.Extension import Extension
 from UM.Logger import Logger
 from UM.Application import Application
 from PyQt6.QtCore import QTimer, Qt
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication, QDockWidget
 from .print_pipeline import PrintPipeline
 from .printView import printView
 from .print_job_service import PrintJobService
+from .laser_control_panel import LaserControlPanel
 import os
 
 class PrintController(Extension):
     def __init__(self):
         super().__init__()
         self.addMenuItem("Send to scancard", self.print_process)
+        self.addMenuItem("Toggle Laser Controls", self.toggle_laser_panel)  # Add menu item
         self.Logger = Logger
         self.print_pipeline = PrintPipeline()
         self.printView = printView()
@@ -38,7 +40,155 @@ class PrintController(Extension):
         self._layer_update_interval = 1  # Update every layer for live preview
         self._last_layer_update_time = 0  # Track timing
         
+        # Defer dock panel creation until UI is ready
+        self.laser_dock = None
+        self.laser_panel = None
+        QTimer.singleShot(1000, self._setup_laser_dock_panel)  # Delay 1 second
+        
         self.Logger.log("d", "[PrintPlugin] Initialized successfully")
+
+    def _setup_laser_dock_panel(self):
+        """Create and add the laser control dock panel to Cura's UI"""
+        try:
+            # Get the main window
+            main_window = self.app.getMainWindow()
+            
+            if not main_window:
+                self.Logger.log("w", "[PrintPlugin] Main window not ready, retrying in 1 second")
+                QTimer.singleShot(1000, self._setup_laser_dock_panel)
+                return
+            
+            # Create the laser control panel first
+            self.laser_panel = LaserControlPanel()
+            
+            # Connect signals from the panel to handlers
+            self.laser_panel.connect_requested.connect(self._on_laser_connect)
+            self.laser_panel.home_laser_requested.connect(self._on_laser_home)
+            self.laser_panel.laser_on_requested.connect(self._on_laser_on)
+            self.laser_panel.laser_off_requested.connect(self._on_laser_off)
+            self.laser_panel.power_changed.connect(self._on_power_changed)
+            self.laser_panel.delay_changed.connect(self._on_delay_changed)
+            self.laser_panel.pattern_changed.connect(self._on_pattern_changed)
+            self.laser_panel.correction_changed.connect(self._on_correction_changed)
+            self.laser_panel.mode_changed.connect(self._on_mode_changed)
+            self.laser_panel.fetch_values_requested.connect(self._on_fetch_values)
+            
+            # Create the dock widget
+            self.laser_dock = QDockWidget("Laser Controls")
+            self.laser_dock.setObjectName("LaserControlDock")
+            
+            # Set the panel as the dock widget's content
+            self.laser_dock.setWidget(self.laser_panel)
+            
+            # Configure dock widget BEFORE adding to main window
+            self.laser_dock.setAllowedAreas(
+                Qt.DockWidgetArea.LeftDockWidgetArea | 
+                Qt.DockWidgetArea.RightDockWidgetArea |
+                Qt.DockWidgetArea.BottomDockWidgetArea
+            )
+            
+            # Allow moving and floating
+            self.laser_dock.setFeatures(
+                QDockWidget.DockWidgetFeature.DockWidgetMovable |
+                QDockWidget.DockWidgetFeature.DockWidgetFloatable |
+                QDockWidget.DockWidgetFeature.DockWidgetClosable
+            )
+            
+            # Set a reasonable size
+            self.laser_dock.setMinimumWidth(420)
+            self.laser_dock.setMinimumHeight(600)
+            
+            # Prevent it from floating initially
+            self.laser_dock.setFloating(False)
+            
+            # Add to main window - try bottom area instead
+            main_window.addDockWidget(Qt.DockWidgetArea.BottomDockWidgetArea, self.laser_dock)
+            
+            # Ensure visibility
+            self.laser_dock.setVisible(True)
+            
+            self.Logger.log("d", "[PrintPlugin] Laser control dock panel created successfully")
+                
+        except Exception as e:
+            self.Logger.log("e", f"[PrintPlugin] Error creating laser dock panel: {e}")
+            import traceback
+            self.Logger.log("e", traceback.format_exc())
+
+    # Laser control signal handlers
+    def toggle_laser_panel(self):
+        """Toggle the visibility of the laser control panel"""
+        if self.laser_dock:
+            self.laser_dock.setVisible(not self.laser_dock.isVisible())
+            Logger.log("d", f"[PrintPlugin] Laser dock visibility: {self.laser_dock.isVisible()}")
+        else:
+            Logger.log("w", "[PrintPlugin] Laser dock not initialized yet")
+            # Try to create it now
+            self._setup_laser_dock_panel()
+    
+    def _on_laser_connect(self, port):
+        """Handle laser connection request"""
+        Logger.log("d", f"[PrintPlugin] Laser connect to {port}")
+        # TODO: Implement actual serial connection logic here
+        # For now, just update the UI
+        # self.laser_panel.set_connection_status(True)
+        pass
+        
+    def _on_laser_home(self):
+        """Handle laser homing request"""
+        Logger.log("d", "[PrintPlugin] Laser home requested")
+        # TODO: Implement laser homing logic
+        pass
+        
+    def _on_laser_on(self):
+        """Handle laser on request"""
+        Logger.log("d", "[PrintPlugin] Laser ON requested")
+        # TODO: Implement laser on logic
+        pass
+        
+    def _on_laser_off(self):
+        """Handle laser off request"""
+        Logger.log("d", "[PrintPlugin] Laser OFF requested")
+        # TODO: Implement laser off logic
+        pass
+        
+    def _on_power_changed(self, power):
+        """Handle laser power change"""
+        Logger.log("d", f"[PrintPlugin] Laser power changed to {power}%")
+        # TODO: Send power command to laser controller
+        pass
+        
+    def _on_delay_changed(self, delay):
+        """Handle mark delay change"""
+        Logger.log("d", f"[PrintPlugin] Mark delay changed to {delay}")
+        # TODO: Send delay command to laser controller
+        pass
+        
+    def _on_pattern_changed(self, pattern):
+        """Handle pattern change"""
+        Logger.log("d", f"[PrintPlugin] Pattern changed to {pattern}")
+        # TODO: Send pattern command to laser controller
+        pass
+        
+    def _on_correction_changed(self, is_on):
+        """Handle correction mode change"""
+        Logger.log("d", f"[PrintPlugin] Correction changed to {'ON' if is_on else 'OFF'}")
+        # TODO: Send correction command to laser controller
+        pass
+        
+    def _on_mode_changed(self, mode):
+        """Handle mode change"""
+        Logger.log("d", f"[PrintPlugin] Mode changed to {mode}")
+        # TODO: Send mode command to laser controller
+        pass
+        
+    def _on_fetch_values(self):
+        """Handle fetch values request"""
+        Logger.log("d", "[PrintPlugin] Fetch values requested")
+        # TODO: Implement fetching monitored values from hardware
+        # Example of updating values:
+        # self.laser_panel.update_monitored_value("12V monitoring", "12.3V")
+        # self.laser_panel.update_monitored_value("Galvo supply", "5.1V")
+        pass
 
     def _schedule_layer_update(self, layer_number):
         """Schedule a layer update with throttling to prevent UI glitches"""
